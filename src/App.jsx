@@ -8,6 +8,10 @@ import {
   getStudents
 } from './services/api';
 
+import CreateTopicForm from './components/CreateTopicForm';
+import CreateMaterialForm from './components/CreateMaterialForm';
+import CreateCourseworkForm from './components/CreateCourseworkForm';
+
 export default function App() {
 
   const [courses, setCourses] = useState([]);
@@ -116,51 +120,82 @@ export default function App() {
 
   async function handleDownloadEverything(work) {
 
-  if (!selectedCourse || !work) {
-    return;
-  }
-
-  try {
-
-    console.log(selectedCourse);
-    console.log(work);
-
-    const url =
-      `${API_URL}/courses/${selectedCourse}/coursework/${work.id}/download-all`;
-
-    console.log(url);
-
-    const response = await fetch(url);
-
-    if (!response.ok) {
-      throw new Error('Download failed');
+    if (!selectedCourse || !work) {
+      return;
     }
 
-    const blob = await response.blob();
+    try {
 
-    const downloadUrl =
-      window.URL.createObjectURL(blob);
+      const url =
+        `${API_URL}/courses/${selectedCourse}/coursework/${work.id}/download-all`;
 
-    const a = document.createElement('a');
+      const response = await fetch(url);
 
-    a.href = downloadUrl;
+      if (!response.ok) {
+        throw new Error('Download failed');
+      }
 
-    a.download =
-      `${work.title}.zip`;
+      const blob = await response.blob();
 
-    document.body.appendChild(a);
+      const downloadUrl =
+        window.URL.createObjectURL(blob);
 
-    a.click();
+      const a = document.createElement('a');
 
-    a.remove();
+      a.href = downloadUrl;
 
-    window.URL.revokeObjectURL(downloadUrl);
+      a.download =
+        `${work.title}.zip`;
 
-  } catch (error) {
+      document.body.appendChild(a);
 
-    console.error(error);
+      a.click();
+
+      a.remove();
+
+      window.URL.revokeObjectURL(downloadUrl);
+
+    } catch (error) {
+
+      console.error(error);
+    }
   }
-}
+
+  async function reloadTopics() {
+
+    if (!selectedCourse) return;
+
+    try {
+
+      const data = await getTopics(selectedCourse);
+
+      setTopics(data);
+
+    } catch (error) {
+
+      console.error(error);
+    }
+  }
+
+  async function reloadCoursework() {
+
+    if (!selectedCourse || !selectedTopic) return;
+
+    try {
+
+      const data =
+        await getCoursework(
+          selectedCourse,
+          selectedTopic
+        );
+
+      setCoursework(data);
+
+    } catch (error) {
+
+      console.error(error);
+    }
+  }
 
   function getStudentName(userId) {
 
@@ -244,6 +279,13 @@ export default function App() {
               Topics
             </h2>
 
+            {selectedCourse && (
+              <CreateTopicForm
+                courseId={selectedCourse}
+                onCreated={reloadTopics}
+              />
+            )}
+
             <div className="space-y-3">
 
               {topics.map(topic => (
@@ -281,6 +323,24 @@ export default function App() {
             <h2 className="text-2xl font-semibold mb-5">
               Coursework
             </h2>
+
+            {selectedCourse && (
+              <>
+                <CreateCourseworkForm
+                  courseId={selectedCourse}
+                  topics={topics}
+                  defaultTopicId={selectedTopic}
+                  onCreated={reloadCoursework}
+                />
+
+                <CreateMaterialForm
+                  courseId={selectedCourse}
+                  topics={topics}
+                  defaultTopicId={selectedTopic}
+                  onCreated={reloadCoursework}
+                />
+              </>
+            )}
 
             <div className="space-y-4">
 
